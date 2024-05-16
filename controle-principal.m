@@ -1,6 +1,8 @@
 clc;clear;
 close all
 
+disp("Running")
+
 syms T1 T2 T3 T_ar mdot cp Qdotger rho Delta_P_R Delta_P_H2O V_motor V_I V_II U_A F
 
 dTi = [(mdot*cp*(T3-T1) + Qdotger +(mdot /rho)*Delta_P_H2O ) / (rho * V_motor * cp), %
