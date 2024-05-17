@@ -15,12 +15,17 @@ dTi = [(mdot*cH2O*(T6-T1) + Qdotger +(mdot /rho)*Delta_P_H2O ) / (rho * V_motor 
 
 
 Tarr = [T1,T2,T3,T4,T5,T6]
-nCells = max(size(Tcells))-1 % We have one more T (surface) than cells
+nT = max(size(Tcells))
+nCells = nT-1 % We have one more T (surface) than cells
 
+
+u_params = [U_A]
+fluctating_params = [Qdotger, mdot,Delta_P_H20,T_ar]
 
 A = jacobian(dTi, Tarr)
 B_full = jacobian(dTi, [Qdotger,U_A,mdot,Delta_P_H2O, T_ar])
-B = jacobian(dTi, [mdot, U_A])
+B = jacobian(dTi, u_params)
+E = jacobian(dTi,fluctating_params)
 
 latexify("\frac{d}{dt}\vec T =",dTi)
 latexify("A=",A)
@@ -65,9 +70,10 @@ B_full = subs(B_full)
 B = subs(B)
 
 C_full_observe = eye(size(A)); % Matriz de identidade
-C = [[1,0,0],[0,0,0],[0,0,1]]
+C = zeros([nT, nT])
+C(1) = C(end) = 1 % We can only measure edge temperatures
 
-D1 = zeros(size(C_full_observe,1), size(B_full,2)); % Matriz de zeros
+D1 = zeros(size(B)); % Matriz de zeros
 
 % Definindo o sistema
 sys = ss(A, B, C1_full_observe, D1);
@@ -78,8 +84,8 @@ disp('Polos:');
 disp(polos);
 
 % Loop para calcular as funcoes de transferencia
-for IU = 1:size(B1,2)
-    [num,den] = ss2tf(A, B1, C1, D1, IU);
+for IU = 1:size(B,2)
+    [num,den] = ss2tf(A, B, C, D, IU);
     num = num(end,:); % Converte a matriz num em um vetor de linha
     den = den(end,:); % Converte a matriz den em um vetor de linha
     TF = tf(num,den);
@@ -96,15 +102,6 @@ title('Diagrama de Bode');
 
 %%%% MALHA FECHADA %%%%
 
-B = [0; e_dUA_term; f_dUA_term];
-disp(B); % Matriz de controle
-
-C = eye(size(A)); % Matriz de identidade
-D = zeros(size(A, 1), size(B, 2)); % Matriz de zeros
-
-E = [d_dQger, d_dm_dot, d_dDelta_P_H2O, 0;
-     0, e_dm_dot, e_dDelta_P_H2O, e_dT_ar;
-     0, f_dm_dot, f_dDelta_P_H2O, f_dT_ar];
 disp(E); % Matriz de distúrbios
 
 
@@ -132,6 +129,8 @@ end
 
 % Polos desejados
 desired_poles = [-1 + 1i, -1 - 1i , -0.0001];
+%TODO update based on LQR-search?
+
 
 % Calcular o ganho do controlador K
 Kp = place(A, B, desired_poles);
