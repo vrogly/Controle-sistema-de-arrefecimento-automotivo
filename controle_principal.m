@@ -21,7 +21,7 @@ nT = max(size(Tarr))
 nCells = nT-1 % We have one more T (surface) than cells
 
 
-u_params = [U_A]
+u_params = [U_A,mdot]
 fluctating_params = [Qdotger, mdot,Delta_P_H2O,T_ar]
 
 A = jacobian(dTi, Tarr)
@@ -62,7 +62,7 @@ fluc_arr = [Qdotger_fluc, mdot_fluc, Delta_P_H20_fluc, T_ar_fluc]
 v_d = diag(fluc_arr./fluctating_params) % really important that these are in right order
 
 v_d = subs(v_d)
-dTi = subs(dTi)
+dTi = subs(dTi);
 
 % Equilibrium conditions
 
@@ -75,20 +75,35 @@ T5 = eq_sol.T5;
 T6 = eq_sol.T6;
 
 
-A = double(subs(A))
-B = double(subs(B))
-E = double(subs(E))
+A = double(subs(A));
+B = double(subs(B));
+E = double(subs(E));
 
 
 C_full_observe = eye(size(A)); % Matriz de identidade
 C = zeros([nT, nT]);
 C(1) = 1; % We can only measure edge temperatures
-C(end) = C(1)
+C(end) = C(1);
 
 D = zeros([size(C,1),size(B,2)]); % Matriz de zeros
 
 % Definindo o sistema
-sys = ss(A, B, C_full_observe, D);
+sys = ss(A, B, C_full_observe, D)
+
+%%
+
+% Plot a step resonse 
+t = 0:0.1:20;
+
+respOpt = RespConfig;
+respOpt.InputOffset = [0];
+respOpt.Amplitude = [-5];
+respOpt.InitialState = [0,0,0,0,0,0];
+respOpt.Delay = 0;
+
+figure;
+step(sys,t,respOpt)
+title('Stepresponse to changed U_A, open loop');
 
 %%
 % Obtendo os polos
@@ -107,11 +122,61 @@ for IU = 1:size(B,2)
 end
 
 % Plotando o diagrama de Bode
-figure;
-bode(sys);
-title('Diagrama de Bode');
+%figure;
+%bode(sys);
+%title('Diagrama de Bode');
 
 %%
+
+%%%% REGULADOR LINEAR QUADRÁTICO %%%%
+
+% Definindo as matrizes de peso Q e R
+Q = eye(size(A)); % Matriz de peso para os estados
+R = 0.0001; % Peso para a entrada, %% Make it expensive to change fan speed
+
+% Calculando o ganho do controlador LQR
+Klq = lqr(A, B, Q, R);
+
+% Sistema em malha fechada com controlador LQR
+A_cl1 = A - B * Klq;
+sys_cl1 = ss(A_cl1, B, C, D);
+
+% Exibindo os polos
+polos_lqr = eig(A_cl1);
+disp('Polos do sistema com controlador LQR:');
+disp(polos_lqr);
+
+t = 0:0.1:20;
+figure;
+step(sys_cl1,t,respOpt)
+title('Stepresponse to changed U_A, LQR');
+
+%%
+
+
+
+
+
+% Simular a resposta ao degrau do sistema
+[ylq, t, xlq] = lsim(sys_cl1, u, t, x0);
+
+% Plotar a resposta do sistema
+figure;
+plot(t, ylq)
+xlabel('Tempo (s)')
+ylabel('Saída do sistema (K)')
+legend(Tnames)
+title('Resposta do Sistema com Controlador LQR')
+grid on
+
+% Comparacao entre LQR e Alocacao de polos 
+figure;
+plot(t, yp, '--', t, ylq);
+xlabel('Tempo (s)');
+ylabel('Saída do sistema (K)');
+legend('Alocação de Polos T_1', 'Alocação de Polos T_2', 'Alocação de Polos T_3','LQR T_1','LQR T_2','LQR T_3');
+title('Comparação entre Alocação de Polos e LQR');
+grid on;
 
 %%%% MALHA FECHADA %%%%
 
@@ -139,7 +204,7 @@ else
 end
 
 %%%% ALOCACAO DE POLOS %%%%
-
+%{
 % Polos desejados
 desired_poles = [-1 + 1i, -1 - 1i , -0.0001];
 %TODO update based on LQR-search?
@@ -187,44 +252,7 @@ title('Resposta do Sistema sem Alocação de Polos')
 legend('T_1','T_2','T_3')
 grid on
 
-%%%% REGULADOR LINEAR QUADRÁTICO %%%%
 
-% Definindo as matrizes de peso Q e R
-Q = eye(3); % Matriz de peso para os estados
-R = 1; % Peso para a entrada
-
-% Calculando o ganho do controlador LQR
-Klq = lqr(A, B, Q, R);
-
-% Sistema em malha fechada com controlador LQR
-A_cl1 = A - B * Klq;
-sys_cl1 = ss(A_cl1, B, C, D);
-
-% Exibindo os polos
-polos_lqr = eig(A_cl1);
-disp('Polos do sistema com controlador LQR:');
-disp(polos_lqr);
-
-% Simular a resposta ao degrau do sistema
-[ylq, t, xlq] = lsim(sys_cl1, u, t, x0);
-
-% Plotar a resposta do sistema
-figure;
-plot(t, ylq)
-xlabel('Tempo (s)')
-ylabel('Saída do sistema (K)')
-legend('T_1','T_2','T_3')
-title('Resposta do Sistema com Controlador LQR')
-grid on
-
-% Comparacao entre LQR e Alocacao de polos 
-figure;
-plot(t, yp, '--', t, ylq);
-xlabel('Tempo (s)');
-ylabel('Saída do sistema (K)');
-legend('Alocação de Polos T_1', 'Alocação de Polos T_2', 'Alocação de Polos T_3','LQR T_1','LQR T_2','LQR T_3');
-title('Comparação entre Alocação de Polos e LQR');
-grid on;
 
 % Plotando os polos
 figure;
@@ -232,7 +260,7 @@ pzmap(sys,'r',sys_cl, 'g',sys_cl1,'b');
 legend("Sem alocação", "Com alocação", "LQR")
 
 title('Mapa de Polos e Zeros');
-
+%}
 
 % LQE
 
@@ -240,3 +268,7 @@ title('Mapa de Polos e Zeros');
 Kf = (lqr(A',C',Vd,Vn))'
 
 sysKF = ss(A-Kf*C,[B Kf],eye(6),0*[B Kf])
+
+
+%% Simulation part
+
