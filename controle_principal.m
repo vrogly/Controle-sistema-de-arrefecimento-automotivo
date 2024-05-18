@@ -21,7 +21,7 @@ nT = max(size(Tarr))
 nCells = nT-1 % We have one more T (surface) than cells
 
 
-u_params = [U_A,mdot]
+u_params = [U_A]
 fluctating_params = [Qdotger, mdot,Delta_P_H2O,T_ar]
 
 A = jacobian(dTi, Tarr)
@@ -40,7 +40,7 @@ F = 0.9
 cH2O = 4186 % J/kgK
 rho = 1*LiterToM3 % kg/L
 mdot = 25/60 % kg/s
-Qdotger = 7500 % W
+Qdotger = 4236.61 % W
 
 Delta_P_H2O = 35000 % Pa
 Delta_P_R = Delta_P_H2O/nCells % Pa
@@ -50,7 +50,7 @@ V_cell = V_motor/nCells
 
 F = 0.9
 T_ar = 298 % K
-U_A = 80 % W/K
+U_A = 500 % W/K
 
 Qdotger_fluc = 1500 % W
 mdot_fluc = 5/60 % kg/s
@@ -59,9 +59,9 @@ T_ar_fluc = 10 % C
 
 fluc_arr = [Qdotger_fluc, mdot_fluc, Delta_P_H20_fluc, T_ar_fluc]
 
-v_d = diag(fluc_arr./fluctating_params) % really important that these are in right order
+vd = diag(fluc_arr./fluctating_params) % really important that these are in right order
 
-v_d = subs(v_d)
+vd = subs(vd)
 dTi = subs(dTi);
 
 % Equilibrium conditions
@@ -262,12 +262,32 @@ legend("Sem alocação", "Com alocação", "LQR")
 title('Mapa de Polos e Zeros');
 %}
 
-% LQE
+%% LQE
 
-[L,P,E] = lqe(A,Vd,C,Vd,Vn)
-Kf = (lqr(A',C',Vd,Vn))'
 
-sysKF = ss(A-Kf*C,[B Kf],eye(6),0*[B Kf])
+
+sys_cl_k = ss(A, B, C, D);
+sys_cl_k.InputName = 'U_A';
+sys_cl_k.OutputName = 'T1-6';
+
+%[L,P,E] = lqe(A,Vd,C,Vd,Vn)
+%Kf = (lqr(A',C',Vd,Vn))'
+
+Q = 10;
+R = 10;
+N = 0; % No correlation
+
+[kalmf,L,P] = kalman(sys_cl_k,Q,R,N);
+size(kalmf)
+
+kalmf.InputGroup
+
+figure;
+step(sys_cl_k,t,respOpt)
+title('Stepresponse to changed U_A, Kalman');
+
+%sysKF = ss(A-Kf*C,[B Kf],eye(6),0*[B Kf])
+
 
 
 %% Simulation part
