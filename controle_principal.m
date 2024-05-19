@@ -40,7 +40,7 @@ F = 0.9
 cH2O = 4186 % J/kgK
 rho = 1*LiterToM3 % kg/L
 mdot = 25/60 % kg/s
-Qdotger = 4236.61 % W
+Qdotger = 6000 % W
 
 Delta_P_H2O = 35000 % Pa
 Delta_P_R = Delta_P_H2O/nCells % Pa
@@ -50,7 +50,7 @@ V_cell = V_motor/nCells
 
 F = 0.9
 T_ar = 298 % K
-U_A = 500 % W/K
+U_A = 100/nCells % W/K
 
 Qdotger_fluc = 1500 % W
 mdot_fluc = 5/60 % kg/s
@@ -84,6 +84,7 @@ C_full_observe = eye(size(A)); % Matriz de identidade
 C = zeros([nT, nT]);
 C(1) = 1; % We can only measure edge temperatures
 C(end) = C(1);
+%C(2,2 ) = 1
 
 D = zeros([size(C,1),size(B,2)]); % Matriz de zeros
 
@@ -97,7 +98,7 @@ t = 0:0.1:20;
 
 respOpt = RespConfig;
 respOpt.InputOffset = [0];
-respOpt.Amplitude = [-5];
+respOpt.Amplitude = [-2];
 respOpt.InitialState = [0,0,0,0,0,0];
 respOpt.Delay = 0;
 
@@ -139,7 +140,7 @@ Klq = lqr(A, B, Q, R);
 
 % Sistema em malha fechada com controlador LQR
 A_cl1 = A - B * Klq;
-sys_cl1 = ss(A_cl1, B, C, D);
+sys_cl1 = ss(A_cl1, B, C_full_observe, D);
 
 % Exibindo os polos
 polos_lqr = eig(A_cl1);
@@ -150,13 +151,65 @@ t = 0:0.1:20;
 figure;
 step(sys_cl1,t,respOpt)
 title('Stepresponse to changed U_A, LQR');
+ylabel('\Delta T compared to equlibrium (K)');
 
-%%
+%% Pole Placement
+
+% Uses LQR poles and tries to vary them slightly to manually
+% decide if there are more suitable placements
+
+polesFactorArr = [0.3, 0.8, 0.9,1, 1.1, 1.2, 3]
+
+for poleFactor = 1:size(polesFactorArr,2)
+    desired_poles = polos_lqr * polesFactorArr(poleFactor)
+    Kp = place(A, B, desired_poles);
+    A_poleTemp = A - B * Kp;
+    disp(eig(A_poleTemp))
+    sys_poleTemp = ss(A_poleTemp, B, C_full_observe, D);
+    % Add plotting code here @ Arthur, plot the U
+    figure;
+    step(sys_poleTemp,t,respOpt)
+    title(append('Step response to changed U_A, Pole placement: LQR \times' ,num2str(polesFactorArr(poleFactor))));
+    ylabel('\Delta T compared to equlibrium (K)');
+end
+
+%% LQE
 
 
 
+sys_cl_k = ss(A, B, C, D);
+sys_cl_k.InputName = 'U_A';
+sys_cl_k.OutputName = 'T1-6';
+
+%[L,P,E] = lqe(A,Vd,C,Vd,Vn)
+%Kf = (lqr(A',C',Vd,Vn))'
+
+Q = 10;
+R = 10;
+N = 0; % No correlation
+
+[kalmf,L,P] = kalman(sys_cl_k,Q,R,N);
+size(kalmf)
+
+kalmf.InputGroup
+
+figure;
+disp("not using kalman filter")
+step(sys_cl_k,t,respOpt)
+title('Stepresponse to changed U_A, Kalman');
 
 
+% TODO add simulation with kalman filter, basically what we have here
+% https://www.mathworks.com/help/control/ug/kalman-filtering.html
+% Also, test controlability
+% Pole placement just change LQR with 10%
+% Plot all poles
+
+
+%% Simulation part IGNORE THIS
+
+
+%{
 % Simular a resposta ao degrau do sistema
 [ylq, t, xlq] = lsim(sys_cl1, u, t, x0);
 
@@ -202,7 +255,7 @@ if rank_ob == size(A, 1)
 else
     disp('O sistema não é observável.')
 end
-
+%}
 %%%% ALOCACAO DE POLOS %%%%
 %{
 % Polos desejados
@@ -261,34 +314,3 @@ legend("Sem alocação", "Com alocação", "LQR")
 
 title('Mapa de Polos e Zeros');
 %}
-
-%% LQE
-
-
-
-sys_cl_k = ss(A, B, C, D);
-sys_cl_k.InputName = 'U_A';
-sys_cl_k.OutputName = 'T1-6';
-
-%[L,P,E] = lqe(A,Vd,C,Vd,Vn)
-%Kf = (lqr(A',C',Vd,Vn))'
-
-Q = 10;
-R = 10;
-N = 0; % No correlation
-
-[kalmf,L,P] = kalman(sys_cl_k,Q,R,N);
-size(kalmf)
-
-kalmf.InputGroup
-
-figure;
-step(sys_cl_k,t,respOpt)
-title('Stepresponse to changed U_A, Kalman');
-
-%sysKF = ss(A-Kf*C,[B Kf],eye(6),0*[B Kf])
-
-
-
-%% Simulation part
-
