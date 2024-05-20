@@ -12,7 +12,7 @@ dTi = [(mdot*cH2O*(T6-T1) + Qdotger +(mdot /rho)*Delta_P_H2O ) / (rho * V_motor 
     (-F*U_A*((T4-T5)/(log((T4-T_ar)/(T5-T_ar)))) + mdot*cH2O*(T4-T5) -(mdot/rho)*Delta_P_R ) / (rho * V_cell * cH2O),
     (-F*U_A*((T5-T6)/(log((T5-T_ar)/(T6-T_ar)))) + mdot*cH2O*(T5-T6) -(mdot/rho)*Delta_P_R ) / (rho * V_cell * cH2O),
     ]
-
+dT_pure = matlabFunction(dTi);
 
 Tarr = [T1,T2,T3,T4,T5,T6]
 Tnames = ['T_1','T_2','T_3','T_4','T_5','T_6']
@@ -21,7 +21,7 @@ nT = max(size(Tarr))
 nCells = nT-1 % We have one more T (surface) than cells
 
 
-u_params = [U_A]
+u_params = [U_A] % Note! You will have do do manual changes if you increase params here by adding more u_UA etc functions
 fluctating_params = [Qdotger, mdot,Delta_P_H2O,T_ar]
 
 A = jacobian(dTi, Tarr)
@@ -66,6 +66,23 @@ dTi = subs(dTi);
 
 % Equilibrium conditions
 
+dT_handle = matlabFunction(dTi);
+dT_lambda = @(t,T)dT_handle(T(1),T(2),T(3),T(4),T(5),T(6))
+%[t,y] = ode45(dT_lambda(),[0 200],[400;399;398;397;396;395]);
+
+tSimulation = 0:1:1000;
+TarrSimulation = [370;369;368;367;366;365]
+
+
+% TODO IMPLEMENT THE CONTROLLER LIKE THIS
+%x0 = [-1; 0; pi+.1; 0];  % initial condition 
+%wr = [1; 0; pi; 0];      % reference position
+%u=@(x) U_A-K*(x - wr);       % control law
+%u=@(x)-K*(x - wr);       % control law
+%[t,x] = ode45(@(t,x)pendcart(x,m,M,L,g,d,u(x)),tspan,x0);
+
+
+
 eq_sol = solve(dTi)
 T1 = eq_sol.T1;
 T2 = eq_sol.T2;
@@ -73,7 +90,7 @@ T3 = eq_sol.T3;
 T4 = eq_sol.T4;
 T5 = eq_sol.T5;
 T6 = eq_sol.T6;
-
+T_equilibrium = [T1;T2;T3;T4;T5;T6]
 
 A = double(subs(A));
 B = double(subs(B));
@@ -81,15 +98,17 @@ E = double(subs(E));
 
 
 C_full_observe = eye(size(A)); % Matriz de identidade
-C = zeros([nT, nT]);
+C = zeros([2, nT]); % We only measure 2 values
 C(1) = 1; % We can only measure edge temperatures
 C(end) = C(1);
 %C(2,2 ) = 1
 
+D_full_observe = zeros([size(C_full_observe,1),size(B,2)]); % Matriz de zeros
 D = zeros([size(C,1),size(B,2)]); % Matriz de zeros
 
+
 % Definindo o sistema
-sys = ss(A, B, C_full_observe, D)
+sys = ss(A, B, C_full_observe, D_full_observe)
 
 %%
 
@@ -140,7 +159,7 @@ Klq = lqr(A, B, Q, R);
 
 % Sistema em malha fechada com controlador LQR
 A_cl1 = A - B * Klq;
-sys_cl1 = ss(A_cl1, B, C_full_observe, D);
+sys_cl1 = ss(A_cl1, B, C_full_observe, D_full_observe);
 
 % Exibindo os polos
 polos_lqr = eig(A_cl1);
@@ -158,14 +177,16 @@ ylabel('\Delta T compared to equlibrium (K)');
 % Uses LQR poles and tries to vary them slightly to manually
 % decide if there are more suitable placements
 
-polesFactorArr = [0.3, 0.8, 0.9,1, 1.1, 1.2, 3]
+%polesFactorArr = [0.3, 0.8, 0.9,1, 1.1, 1.2, 3]
+polesFactorArr = [0.3]
+
 
 for poleFactor = 1:size(polesFactorArr,2)
     desired_poles = polos_lqr * polesFactorArr(poleFactor)
     Kp = place(A, B, desired_poles);
     A_poleTemp = A - B * Kp;
     disp(eig(A_poleTemp))
-    sys_poleTemp = ss(A_poleTemp, B, C_full_observe, D);
+    sys_poleTemp = ss(A_poleTemp, B, C_full_observe, D_full_observe);
     % Add plotting code here @ Arthur, plot the U
     figure;
     step(sys_poleTemp,t,respOpt)
@@ -204,6 +225,34 @@ title('Stepresponse to changed U_A, Kalman');
 % Also, test controlability
 % Pole placement just change LQR with 10%
 % Plot all poles
+
+
+
+
+%% Simulations performed here tambem
+
+
+u_UA_malha_abert = @(T)U_A%-K*(T-Tarr)
+[t,y_malha_abert] = ode45(@(t,T)dT_pure(Delta_P_R,Delta_P_H2O,F,Qdotger,T(1),T(2),T(3),T(4),T(5),T(6),T_ar,u_UA_malha_abert(T),V_cell,V_motor,cH2O,mdot,rho),tSimulation,TarrSimulation);
+
+u_UA_LQR = @(T)double(-Klq*(T-T_equilibrium))
+[t,y_LQR] = ode45(@(t,T)dT_pure(Delta_P_R,Delta_P_H2O,F,Qdotger,T(1),T(2),T(3),T(4),T(5),T(6),T_ar,u_UA_LQR(T),V_cell,V_motor,cH2O,mdot,rho),tSimulation,TarrSimulation);
+
+
+figure;
+plot(tSimulation,y_malha_abert,'r')
+hold on
+plot(tSimulation,y_LQR,'b')
+hold on
+
+
+
+
+
+
+
+
+
 
 
 %% Simulation part IGNORE THIS
