@@ -66,21 +66,13 @@ dTi = subs(dTi);
 
 % Equilibrium conditions
 
-dT_handle = matlabFunction(dTi);
-dT_lambda = @(t,T)dT_handle(T(1),T(2),T(3),T(4),T(5),T(6))
-%[t,y] = ode45(dT_lambda(),[0 200],[400;399;398;397;396;395]);
+%dT_handle = matlabFunction(dTi);
+%dT_lambda = @(t,T)dT_handle(T(1),T(2),T(3),T(4),T(5),T(6))
 
-tSimulation = 0:1:1000;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Simultion comparision
+tSimulation = 0:0.1:35;
 TarrSimulation = [370;369;368;367;366;365]
-
-
-% TODO IMPLEMENT THE CONTROLLER LIKE THIS
-%x0 = [-1; 0; pi+.1; 0];  % initial condition 
-%wr = [1; 0; pi; 0];      % reference position
-%u=@(x) U_A-K*(x - wr);       % control law
-%u=@(x)-K*(x - wr);       % control law
-%[t,x] = ode45(@(t,x)pendcart(x,m,M,L,g,d,u(x)),tspan,x0);
-
 
 
 eq_sol = solve(dTi)
@@ -112,20 +104,6 @@ sys = ss(A, B, C_full_observe, D_full_observe)
 
 %%
 
-% Plot a step resonse 
-t = 0:0.1:20;
-
-respOpt = RespConfig;
-respOpt.InputOffset = [0];
-respOpt.Amplitude = [-2];
-respOpt.InitialState = [0,0,0,0,0,0];
-respOpt.Delay = 0;
-
-figure;
-step(sys,t,respOpt)
-title('Stepresponse to changed U_A, open loop');
-
-%%
 % Obtendo os polos
 polos = eig(A);
 disp('Polos:');
@@ -151,8 +129,10 @@ end
 %%%% REGULADOR LINEAR QUADRÁTICO %%%%
 
 % Definindo as matrizes de peso Q e R
-Q = eye(size(A)); % Matriz de peso para os estados
-R = 0.0001; % Peso para a entrada, %% Make it expensive to change fan speed
+Q = diag([1,0,0,0,0,1])%
+% Did not help to put 0.1 or 0.5 instead of zeros, only made worse 
+% eye(size(A)); % Matriz de peso para os estados
+R = 0.01; % Peso para a entrada, %% Make it expensive to change fan speed
 
 % Calculando o ganho do controlador LQR
 Klq = lqr(A, B, Q, R);
@@ -166,33 +146,46 @@ polos_lqr = eig(A_cl1);
 disp('Polos do sistema com controlador LQR:');
 disp(polos_lqr);
 
-t = 0:0.1:20;
-figure;
-step(sys_cl1,t,respOpt)
-title('Stepresponse to changed U_A, LQR');
-ylabel('\Delta T compared to equlibrium (K)');
 
 %% Pole Placement
 
 % Uses LQR poles and tries to vary them slightly to manually
 % decide if there are more suitable placements
 
-%polesFactorArr = [0.3, 0.8, 0.9,1, 1.1, 1.2, 3]
-polesFactorArr = [0.3]
+polesFactorArr = [0.7, 0.9,1, 1.1, 1.3]
+%polesFactorArr = [0.3]
 
-
+figure;
 for poleFactor = 1:size(polesFactorArr,2)
     desired_poles = polos_lqr * polesFactorArr(poleFactor)
     Kp = place(A, B, desired_poles);
     A_poleTemp = A - B * Kp;
     disp(eig(A_poleTemp))
-    sys_poleTemp = ss(A_poleTemp, B, C_full_observe, D_full_observe);
-    % Add plotting code here @ Arthur, plot the U
-    figure;
-    step(sys_poleTemp,t,respOpt)
-    title(append('Step response to changed U_A, Pole placement: LQR \times' ,num2str(polesFactorArr(poleFactor))));
-    ylabel('\Delta T compared to equlibrium (K)');
+    %sys_poleTemp = ss(A_poleTemp, B, C_full_observe, D_full_observe);
+    %figure;
+
+    %title(append('Step response to changed U_A, Pole placement: LQR \times' ,num2str(polesFactorArr(poleFactor))));
+
+    
+    u_UA_KP = @(T)double(U_A-Kp*(T-T_equilibrium));
+    [t,y_KP] = ode45(@(t,T)dT_pure(Delta_P_R,Delta_P_H2O,F,Qdotger,T(1),T(2),T(3),T(4),T(5),T(6),T_ar,u_UA_KP(T),V_cell,V_motor,cH2O,mdot,rho),tSimulation,TarrSimulation);    
+    
+    %plot(tSimulation,y_KP(:,1))
+    
+    u_KP_history = [];
+    for i = 1:size(y_KP,1)
+        u_KP_history = [u_KP_history nCells * u_UA_KP(transpose(y_KP(i,:)))];
+    end
+    plot(tSimulation,u_KP_history)
+
+
+    hold on
 end
+%ylabel('T_1 (K)');
+ylabel('U_A (-)');
+xlabel('Time (s)');
+
+legend('0.7', '0.9', 'LQR', '1.1', '1.3')
 
 %% LQE
 
@@ -206,18 +199,18 @@ sys_cl_k.OutputName = 'T1-6';
 %Kf = (lqr(A',C',Vd,Vn))'
 
 Q = 10;
-R = 10;
+R_kal = 10;
 N = 0; % No correlation
 
-[kalmf,L,P] = kalman(sys_cl_k,Q,R,N);
+[kalmf,L,P] = kalman(sys_cl_k,Q,R_kal,N);
 size(kalmf)
 
 kalmf.InputGroup
 
-figure;
-disp("not using kalman filter")
-step(sys_cl_k,t,respOpt)
-title('Stepresponse to changed U_A, Kalman');
+%figure;
+%disp("not using kalman filter")
+%step(sys_cl_k,t,respOpt)
+%title('Stepresponse to changed U_A, Kalman');
 
 
 % TODO add simulation with kalman filter, basically what we have here
@@ -230,23 +223,30 @@ title('Stepresponse to changed U_A, Kalman');
 
 
 %% Simulations performed here tambem
+T_equilibrium
 
+u_UA_malha_aberta = @(T)U_A;
+[t,y_malha_aberta] = ode45(@(t,T)dT_pure(Delta_P_R,Delta_P_H2O,F,Qdotger,T(1),T(2),T(3),T(4),T(5),T(6),T_ar,u_UA_malha_aberta(T),V_cell,V_motor,cH2O,mdot,rho),tSimulation,TarrSimulation);
+y_malha_aberta(end,:)
 
-u_UA_malha_abert = @(T)U_A%-K*(T-Tarr)
-[t,y_malha_abert] = ode45(@(t,T)dT_pure(Delta_P_R,Delta_P_H2O,F,Qdotger,T(1),T(2),T(3),T(4),T(5),T(6),T_ar,u_UA_malha_abert(T),V_cell,V_motor,cH2O,mdot,rho),tSimulation,TarrSimulation);
-
-u_UA_LQR = @(T)double(-Klq*(T-T_equilibrium))
+u_UA_LQR = @(T)double(U_A-Klq*(T-T_equilibrium));
 [t,y_LQR] = ode45(@(t,T)dT_pure(Delta_P_R,Delta_P_H2O,F,Qdotger,T(1),T(2),T(3),T(4),T(5),T(6),T_ar,u_UA_LQR(T),V_cell,V_motor,cH2O,mdot,rho),tSimulation,TarrSimulation);
+y_LQR(end,:)
 
 
 figure;
-plot(tSimulation,y_malha_abert,'r')
+plot(tSimulation,y_malha_aberta,'r')
 hold on
 plot(tSimulation,y_LQR,'b')
 hold on
 
-
-
+%%
+u_LQR_history = [];
+for i = 1:size(y_LQR,1)
+    u_LQR_history = [u_LQR_history nCells * u_UA_LQR(transpose(y_LQR(i,:)))];
+end    
+figure;
+plot(tSimulation,u_LQR_history)
 
 
 
@@ -362,4 +362,27 @@ pzmap(sys,'r',sys_cl, 'g',sys_cl1,'b');
 legend("Sem alocação", "Com alocação", "LQR")
 
 title('Mapa de Polos e Zeros');
+
+
+% Plot a step resonse 
+t = 0:0.1:20;
+
+respOpt = RespConfig;
+respOpt.InputOffset = [0];
+respOpt.Amplitude = [-2];
+respOpt.InitialState = [0,0,0,0,0,0];
+respOpt.Delay = 0;
+
+figure;
+step(sys,t,respOpt)
+title('Stepresponse to changed U_A, open loop');
+
+t = 0:0.1:20;
+figure;
+step(sys_cl1,t,respOpt)
+title('Stepresponse to changed U_A, LQR');
+ylabel('\Delta T compared to equlibrium (K)');
+
+
+%%
 %}
