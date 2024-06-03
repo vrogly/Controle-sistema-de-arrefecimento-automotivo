@@ -1,6 +1,10 @@
 clc;clear;
 close all
 set(groot,'defaultAxesFontSize',16)
+set(groot,'DefaultFigureRenderer','painters');
+set(groot, 'defaultAxesTickLabelInterpreter', 'latex');
+set(groot, 'defaultLegendInterpreter', 'latex');
+set(groot, 'defaultTextInterpreter', 'latex');
 
 disp("Running")
 
@@ -55,8 +59,8 @@ U_A = 100/nCells; % W/K
 dTi = subs(dTi);
 
 % Simultion used for comparision
-dt = 0.04;
-tSimulation = 0:dt:40;
+dt = 0.01;
+tSimulation = 0:dt:30;
 TarrSimulation = [370;369;368;367;366;365];
 
 eq_sol = solve(dTi);
@@ -93,22 +97,11 @@ polos = eig(A);
 disp('Polos:');
 disp(polos);
 
-% Loop para calcular as funcoes de transferencia
-for IU = 1:size(B,2)
-    [num,den] = ss2tf(A, B, C, D, IU);
-    num = num(end,:); % Converte a matriz num em um vetor de linha
-    den = den(end,:); % Converte a matriz den em um vetor de linha
-    TF = tf(num,den);
-    disp(['Função de Transferência para a entrada ', num2str(IU), ':']);
-    disp(TF);
-end
-
 % Plotando o diagrama de Bode
 figure;
 bode(sys_ol);
 title('Diagrama de Bode');
 
-%%
 
 %%%% REGULADOR LINEAR QUADRÁTICO %%%%
 
@@ -141,25 +134,28 @@ u_UA_LQR = @(T)double(U_A-Klqr*(T-T_equilibrium));
 [t,y_LQR] = ode45(@(t,T)dT_pure(Delta_P_R,Delta_P_H2O,F,Qdotger,T(1),T(2),T(3),T(4),T(5),T(6),T_ar,u_UA_LQR(T),V_cell,V_motor,cH2O,mdot,rho),tSimulation,TarrSimulation);
 
 figure;
-title("Controlling initial conditions to desired state")
+title("Controlando as condições iniciais para o estado desejado")
 plot(tSimulation,y_malha_aberta,'r');
 hold on;
 plot(tSimulation,y_LQR,'b');
 hold on;
 legend("Malha aberta","","","","","","","LQR")
-ylabel('T_1, T_2, T_3, T_4, T_5, T_6 (K)');
-xlabel('Time (s)');
+ylabel('$T_1, T_2, T_3, T_4, T_5, T_6$ (K)');
+xlabel('Tempo (s)');
+saveas(gcf,'aberta_lqr_T.eps','epsc')
 
 u_LQR_history = [];
 for i = 1:size(y_LQR,1)
     u_LQR_history = [u_LQR_history nCells * u_UA_LQR(transpose(y_LQR(i,:)))];
 end    
 figure;
+title("Controlando as condições iniciais para o estado desejado")
 plot(tSimulation, nCells*U_A*ones(size(tSimulation)),'r');hold on
 plot(tSimulation,u_LQR_history,'b')
-ylabel('U_A (W/K)');
-xlabel('Time (s)');
+ylabel('$U_A$ (W/K)');
+xlabel('Tempo (s)');
 legend("Malha aberta","LQR");
+saveas(gcf,'aberta_lqr_u.eps','epsc')
 
 
 
@@ -201,18 +197,19 @@ for poleFactor = 1:size(polesFactorArr,2)
     plot(tSimulation,u_KP_history); hold on;
 end
 figure(T_pole_history);
-title("Controlling initial conditions to desired state")
-ylabel('T_1 (K)');
-xlabel('Time (s)');
+%title("Controlling initial conditions to desired state")
+ylabel('$T_1$ (K)');
+xlabel('Tempo (s)');
 legend('0.7', '0.9', 'LQR', '1.1', '1.3')
+saveas(gcf,'poles_T.eps','epsc')
 
 
 figure(u_pole_history);
-title("Controlling initial conditions to desired state")
-ylabel('U_A (W/K)');
-xlabel('Time (s)');
+%title("Controlling initial conditions to desired state")
+ylabel('$U_A$ (W/K)');
+xlabel('Tempo (s)');
 legend('0.7', '0.9', 'LQR', '1.1', '1.3')
-
+saveas(gcf,'poles_U.eps','epsc')
 
 
 %% Luenberger
@@ -272,19 +269,103 @@ figure;
 plot(tSimulation,Tlqr(4,:));hold on
 plot(tSimulation,Tsol_approx(4,:),'--');hold on
 plot(tSimulation,Tsol(4,:));hold on
-legend("LQR full observe", "LQG approx", "LQG true")
-ylabel('T_4 (K)');
-xlabel('Time (s)');
-title("Added sensor noise and disturbances")
-
+legend("LQR com $C=I$", "LQG reconstruida", "LQG real")
+ylabel('$T_4$ (K)');
+xlabel('Tempo (s)');
+saveas(gcf,'LQG_T4.eps','epsc')
 
 figure;
 plot(tSimulation,Tmeasures(1,:),'Color',[0.2 0.2 0.9 0.2]);hold on
 plot(tSimulation,Tsol_approx(1,:),'--');hold on
 plot(tSimulation,Tsol(1,:));hold on
-legend("Measured", "LQG approx", "LQG true")
-ylabel('T_1 (K)');
-xlabel('Time (s)');
-title("Added sensor noise and disturbances")
+legend("Medida", "LQG reconstruida", "LQG real")
+ylabel('$T_1$ (K)');
+xlabel('Tempo (s)');
+saveas(gcf,'LQG_T1.eps','epsc')
+
+%%
+
+%%% ANALISE EM MALHA ABERTA %%%
+
+% Criar o sistema de espaço de estados com a matriz numérica
+sys = ss(A, B, C, D);
+
+% Obtendo a função de transferência em malha aberta
+G = tf(sys);
+
+% Função de transferência G_UA
+G_UA = G(1, 1); % Função de transferência entre T1 e U_A (Assumindo U_A é a segunda entrada)
+
+% Coeficientes do numerador e do denominador
+[numerator, denominator] = tfdata(G_UA, 'v');
+
+% Criando a função de transferência
+G_UA = tf(numerator, denominator);
+disp('Função de Transferência G_{T1, U_A}:');
+disp(G_UA);
+
+% search for maximal gain
+syms Kmax;
+combinedTFpoly = Kmax*numerator + denominator;
+
+% Construindo a tabela de Routh
+combinedTFpoly = combinedTFpoly(find(combinedTFpoly, 1):end); % Remove leading zeros if any
+n = length(combinedTFpoly);
+m = ceil(n / 2);
+Routh = Kmax*zeros(n, m);
 
 
+Routh(1, :) = combinedTFpoly(1:2:end); % Coeficientes de termos ímpares
+Routh(2, 1:length(combinedTFpoly(2:2:end))) = combinedTFpoly(2:2:end); % Coeficientes de termos pares
+
+for i = 3:n
+    for j = 1:(m-1)
+        Routh(i, j) = (Routh(i-1, 1) * Routh(i-2, j+1) - Routh(i-2, 1) * Routh(i-1, j+1)) / Routh(i-1, 1);
+    end
+    if all(Routh(i, :) == 0) % Special case: row of zeros
+        Routh(i, :) = (n-i) * polyder(Routh(i-1, :));
+    end
+    if Routh(i, 1) == 0 % Avoid division by zero
+        Routh(i, 1) = 1e-6; % Small value instead of zero
+    end
+end
+
+inEqArr = [];
+for i = 3:n
+    if isempty(solve((Routh(i,1)) > 0)) == 0
+        inEqArr = [inEqArr ((Routh(i,1)) > 0)];
+    else
+        disp(simplify(Routh(i,1)))
+    end
+end
+
+inEqArr
+
+solve(inEqArr,[Kmax],'ReturnConditions',true)
+
+% Manually insert the obtained value
+Kultimate = 98862924258641/329469785125776
+
+
+% Analisando a estabilidade malha aberta
+Kmax = 0
+RouthAberta = subs(Routh)
+stability = all(RouthAberta(:, 1) > 0)
+G_UA
+disp(isstable(G_UA))
+
+disp('Tabela de Routh Malha Aberta:');
+disp(double(RouthAberta));
+
+
+Kmax = Kultimate;
+RouthUltimate = subs(Routh);
+stability = all(RouthUltimate(:, 1) > 0)
+TF_ultimate = feedback(G_UA,Kmax)
+disp(isstable(TF_ultimate))
+
+disp('Tabela de Routh Malha Kultimate:');
+disp(double(RouthUltimate));
+
+cl_poles_u = pole(TF_ultimate)
+P_u = 2*pi / imag(cl_poles_u(1))
