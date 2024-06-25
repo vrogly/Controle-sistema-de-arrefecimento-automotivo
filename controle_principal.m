@@ -101,12 +101,6 @@ polos = eig(A);
 disp('Polos:');
 disp(polos);
 
-% Plotando o diagrama de Bode
-figure;
-bode(sys_ol);
-title('Diagrama de Bode');
-
-
 %%%% REGULADOR LINEAR QUADRÁTICO (LQR) %%%%
 
 % Definindo as matrizes de peso Q e R
@@ -166,10 +160,29 @@ saveas(gcf,'aberta_lqr_u.eps','epsc')
 % Usa pólos LQR e tenta variá-los ligeiramente para decidir manualmente se há posicionamentos mais adequados
 % Trace o controle ao longo do tempo para ver se ele não excede nenhuma especificação
 
-polesFactorArr = [0.7, 0.9, 1, 1.1, 1.3];
 semimanualPoleArr = [polos_lqr diag([1 1.01 1 1 1 1.01])*real(polos_lqr) diag([0.9 1 1 1 1 1])*polos_lqr diag([1.1 1 1 1 1 1])*polos_lqr diag([1.3 1 1 1 1 1])*polos_lqr]
+
+figure;
+plot(real(polos_lqr),imag(polos_lqr),"o", 'MarkerSize',20);hold on
+plot(real(semimanualPoleArr(:,2)),imag(semimanualPoleArr(:,2)),'|', 'MarkerSize',20)
+
+for poleFactor = 3:size(semimanualPoleArr,2)
+    desired_poles = semimanualPoleArr(:,poleFactor)
+    plot(real(desired_poles(1)),imag(desired_poles(1)),"|black", 'MarkerSize',20)
+end
+axis equal
+grid on
+legend('LQR', 'Real LQR', '0.9, 1.1, 1.3 x LQR dominante')
+ylabel("Eixo imaginaria")
+xlabel("Eixo real")
+saveas(gcf,'pole_placement.eps','epsc')
+
+
+%%
 T_pole_history = figure; 
 u_pole_history = figure;
+
+%%
 
 for poleFactor = 1:size(semimanualPoleArr,2)
     desired_poles = semimanualPoleArr(:,poleFactor)
@@ -298,13 +311,6 @@ G = tf(sys_classic);
 
 G_formula = C*inv((s*eye(size(A)) - A))*B+D
 
-figure;
-step(G)
-hold on;
-step(G_formula)
-legend("G ss-modelo", "G função de transferência")
-
-
 % Função de transferência G_UA_Tx
 G_UA_Tfirst = -G % Função de transferência entre T1 e U_A (Assumindo U_A é a segunda entrada)
 
@@ -318,14 +324,16 @@ disp(G_UA_Tfirst);
 figure;
 subplot(1,2,1)
 rlocus(G_UA_Tfirst);
-title("Lugar $G:\Delta U_A \longrightarrow \Delta T_1$",'interpreter','latex')
+title("Lugar $G_{U_A \rightarrow T_1}$",'interpreter','latex')
 ylabel("Eixo imaginaria")
 xlabel("Eixo real")
 subplot(1,2,2)
 [T_resp_unscaled, t_temp] = step(G_UA_Tfirst);
 T_rescaled = T_equilibrium(1) - T_resp_unscaled
+plot([t_temp(1),t_temp(end)],[T_equilibrium(1) T_equilibrium(1)],':black');hold on
+plot([t_temp(1),t_temp(end)],[T_equilibrium(1)-1 T_equilibrium(1)-1],'--black')
 plot(t_temp, T_rescaled)
-title("Degrau $G:\Delta U_A \longrightarrow\Delta T_1$",'interpreter','latex')
+title("Degrau $G_{U_A \rightarrow T_1}$",'interpreter','latex')
 ylabel("$T_1$ (K)")
 xlabel("Tempo (s)")
 stepinfo(G_UA_Tfirst)
@@ -346,18 +354,21 @@ G_compensated = G_comp*G_UA_Tfirst
 figure;
 subplot(1,2,1)
 rlocus(G_compensated);
-title("Lugar $G_C G_{U_A \longrightarrow \Delta T_1}$",'interpreter','latex')
+title("Lugar $G_C G_{U_A \rightarrow \Delta T_1}$",'interpreter','latex')
 ylabel("Eixo imaginaria")
 xlabel("Eixo real")
 subplot(1,2,2)
 [T_resp_unscaled, t_temp] = step(G_compensated);
 T_rescaled = T_equilibrium(1) - T_resp_unscaled
+plot([t_temp(1),t_temp(end)],[T_equilibrium(1) T_equilibrium(1)],':black'); hold on
+plot([t_temp(1),t_temp(end)],[T_equilibrium(1)-1 T_equilibrium(1)-1],'--black')
 plot(t_temp, T_rescaled)
-title("Degrau $G_C G_{U_A \longrightarrow \Delta T_1}$",'interpreter','latex')
-ylabel("ΔT_1 (K)")
-xlabel("Tempo")
+title("Degrau $G_C G_{U_A \rightarrow \Delta T_1}$",'interpreter','latex')
+%legend("Equilibrio","Temperatura alvo","Malha Aberta")
+ylabel("$T_1$ (K)")
+xlabel("Tempo (s)")
 stepinfo(G_compensated)
-saveas(gcf,'G_UA_Tfirst.eps','epsc')
+saveas(gcf,'G_UA_Tfirst_Compensated.eps','epsc')
 
 %%
 % search for maximal gain
@@ -452,7 +463,7 @@ PD_sys = feedback(PD_controller* G_compensated,1)
 P_sys = feedback(P_controller* G_compensated,1)
 
 % PI-controller manually tuned
-G_PI_manual = 5.2208 * (1+4*s)/s 
+G_PI_manual = 21.008 *(s+0.2485)/s %5.2208 * (1+4*s)/s 
 
 PI_manual_sys = feedback(G_PI_manual* G_UA_Tfirst,1)
 
@@ -478,43 +489,48 @@ plot(t_temp, T_rescaled);hold on
 T_rescaled = T_equilibrium(1) - T_resp_unscaled;
 plot(t_temp, T_rescaled);hold on
 
-title("Degrau $G_C G_{U_A \longrightarrow \Delta T_1}$",'interpreter','latex')
+plot([0,step_time],[T_equilibrium(1) T_equilibrium(1)],':black')
+plot([0,step_time],[T_equilibrium(1)-1 T_equilibrium(1)-1],'--black')
+
+title("Resposta ao degrau $G_\mathrm{compensador} G_{U_A \rightarrow \Delta T_1}$",'interpreter','latex')
 ylabel("$T_1$ (K)")
 xlabel("Tempo (s)")
-legend("PID, ZN", "PD, ZN", "P, ZN","So compensador")
+legend("PID, ZN", "PD, ZN", "P, ZN","So compensador","Equilibrio","Temperatura alvo")
 saveas(gcf,'G_comp_ZN_PID.eps','epsc')
 
 figure;
-G_ZN_PID_U = PID_sys/(1+PID_sys*G_compensated)
+G_ZN_PID_U = feedback(PID_sys,G_compensated)
 [U_A_resp_unscaled,t_resp] = step(G_ZN_PID_U,step_time); % plot actual value during response
 U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
 plot(t_resp,U_A_resp_scaled); hold on
 
-G_ZN_PD_U = PD_sys/(1+PD_sys*G_compensated)
+G_ZN_PD_U = feedback(PD_sys,G_compensated)
 [U_A_resp_unscaled,t_resp] = step(G_ZN_PD_U,step_time); % plot actual value during response
 U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
 plot(t_resp,U_A_resp_scaled); hold on
 
-G_ZN_P_U = P_sys/(1+P_sys*G_compensated)
+G_ZN_P_U = feedback(P_sys,G_compensated)
 [U_A_resp_unscaled,t_resp] = step(G_ZN_P_U,step_time); % plot actual value during response
 U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
 plot(t_resp,U_A_resp_scaled); hold on
 
-G_ZN_sem_U = 1/(1+1*G_compensated)
+G_ZN_sem_U = feedback(1,G_compensated)
 [U_A_resp_unscaled,t_resp] = step(G_ZN_sem_U,step_time); % plot actual value during response
 U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
 plot(t_resp,U_A_resp_scaled); hold on
 
+title("Resposta ao degrau $G_\mathrm{compensador}G_{U_A \rightarrow \Delta T_1}$",'interpreter','latex')
 legend("PID, ZN", "PD, ZN", "P, ZN","So compensador")
-
 ylabel("$U_A$ (W/K)")
 xlabel("Tempo (s)")
+saveas(gcf,'G_comp_ZN_PID_U.eps','epsc')
+
 
 figure;
-
-[T_resp_unscaled, t_temp] = step(PI_manual_sys ,step_time );
+[T_resp_unscaled, t_temp] = step(PI_manual_sys ,step_time);
 T_rescaled = T_equilibrium(1) - T_resp_unscaled;
 plot(t_temp, T_rescaled);hold on
+
 
 [T_resp_unscaled, t_temp] = step(feedback(lead_comp_sys,1),step_time);
 T_rescaled = T_equilibrium(1) - T_resp_unscaled;
@@ -524,14 +540,17 @@ plot(t_temp, T_rescaled);hold on
 T_rescaled = T_equilibrium(1) - T_resp_unscaled;
 plot(t_temp, T_rescaled);hold on
 
-title("Degrau $G_{U_A \longrightarrow \Delta T_1}$",'interpreter','latex')
+plot([0,step_time],[T_equilibrium(1) T_equilibrium(1)],':black')
+plot([0,step_time],[T_equilibrium(1)-1 T_equilibrium(1)-1],'--black')
+
+title("Resposta ao degrau $G_{U_A \longrightarrow \Delta T_1}$",'interpreter','latex')
 ylabel("$T_1$ (K)")
 xlabel("Tempo (s)")
-legend("Ajustado manualmente", "lead with closed", "aberta")
-saveas(gcf,'G_comp_ZN_PID_U.eps','epsc')
-
+legend("Ajustado manualmente", "Avanco compensador c/ fechada", "Malha aberta" ,"Equilibrio","Temperatura alvo")
+saveas(gcf,'G_various_allocation.eps','epsc')
 
 figure;
+title("Resposta ao degrau $G_{U_A \rightarrow \Delta T_1}$",'interpreter','latex')
 G_manual_PID_U = PI_manual_sys/(1+PI_manual_sys*G_UA_Tfirst)
 [U_A_resp_unscaled,t_resp] = step(G_manual_PID_U,step_time); % plot actual value during response
 U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
@@ -542,410 +561,53 @@ G_lead_U = lead_comp_sys/(1+lead_comp_sys*G_UA_Tfirst)
 U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
 plot(t_resp,U_A_resp_scaled); hold on
 
-G_aberta = G_UA_Tfirst
+G_aberta = feedback(1,G_UA_Tfirst)
 [U_A_resp_unscaled,t_resp] = step(G_aberta,step_time); % plot actual value during response
 U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
 plot(t_resp,U_A_resp_scaled); hold on
 
-legend("Ajustado manualmente", "lead with closed", "aberta")
-
+title("Resposta ao degrau $G_{U_A \longrightarrow \Delta T_1}$",'interpreter','latex')
+legend("Ajustado manualmente", "Avanco compensador c/ fechada", "Malha aberta")
 ylabel("$U_A$ (W/K)")
 xlabel("Tempo (s)")
-
-
-
-% Since P_u = inf, we cannot use standard Z-N-tuning
-% indeed looking at the step response we have τdead = 0
-% which means Ziegler-Nichols Open-Loop Tuning Method / Process Reaction Method
-% also will not apply. We can used P-controller with obtained values
-% however although it is expected to be bad
-
-%%%% Malha Fechada %%%%
-%%
-figure;
-step(G_UA_Tfirst)
-hold on;
-step(feedback(G_UA_Tfirst,1))
-%legend("Malha aberta", "Malha fechada")
+saveas(gcf,'G_various_allocation_U.eps','epsc')
 
 %%
 
-s = tf("s")
-
-
-
-
-% H = disturbance
-
-
-G_UA_Tfirst_C = feedback(G_C*G_UA_Tfirst,1)
-
-figure;
-subplot(2,1,1)
-[T_resp_unscaled,t_resp] = step(G_UA_Tfirst_C,step_time);
-T_resp_scaled = T_equilibrium(1)-T_resp_unscaled;
-plot(t_resp,T_resp_scaled)
-title("Degrau $(G_CG_{\Delta U_A \longrightarrow \Delta T_1})/(1+G_CG_{\Delta U_A \longrightarrow \Delta T_1})$",'interpreter','latex')
-ylabel("$T_1$ (K)")
-stepinfo(G_UA_Tfirst_C)
-subplot(2,1,2)
-G_UA_Tfirst_C_UA = G_C/(1+G_C*G_UA_Tfirst)
-[U_A_resp_unscaled,t_resp] = step(G_UA_Tfirst_C_UA,step_time); % plot actual value during response
-U_A_resp_scaled = U_A*nCells + nCells*U_A_resp_unscaled;
-
-disp("Final value")
-disp(U_A_resp_scaled(end))
-disp("Max value")
-disp(max(U_A_resp_scaled))
-disp("Min value")
-disp(min(U_A_resp_scaled))
-
-plot(t_resp,U_A_resp_scaled)
-resp_info = stepinfo(t_resp, U_A_resp_scaled)
-ylabel("$U_A$ (W/K)")
-xlabel("Tempo (s)")
-saveas(gcf,'G_UA_Tfirst.eps','epsc')
-%%
-figure;
-%subplot(2,2,1)
-rlocus(G_UA_Tfirst_C);
-title("Lugar $G_C*G_{\Delta U_A \longrightarrow \Delta T_1}/(1+G_C*G_{\Delta U_A \longrightarrow \Delta T_1})$",'interpreter','latex')
-ylabel("Eixo imaginaria")
-xlabel("Eixo real")
-%%
-
-
-% P ZN - tuning
-%K_c_zn = 0.6 * Kultimate
-%tau_i = P_u/2
-%tau_d = P_u/8
-%G_c_zn_PID = K_c_zn * (1 + tf([1], [tau_i 0]) + tf([tau_d 0], [tau_d/N_d 1]))
-
-%%
-pidCoef_ZN_PID = 1.4%pid(0.5 * Kultimate,0.6 * Kultimate,0.01 * Kultimate)
-pidCoef_ZN_PI = 1.2%pid(1.5 * Kultimate,0.6 * Kultimate,0.01 * Kultimate)
-pidCoef_ZN_P = 1%pid(2.5 * Kultimate,0.6 * Kultimate,0.01 * Kultimate)
-
-G_UA_Tfirst_PID_ZN = feedback(pidCoef_ZN_PID*G_UA_Tfirst,1)
-G_UA_Tfirst_PI_ZN = feedback(pidCoef_ZN_PI*G_UA_Tfirst,1)
-G_UA_Tfirst_P_ZN = feedback(pidCoef_ZN_P*G_UA_Tfirst,1)
-
-
-pidCoef_manual = 0.2%pid(0.5 * Kultimate,0.01 * Kultimate,0.01 * Kultimate)
-
-G_UA_Tfirst_PID_manual = feedback(pidCoef_manual*G_UA_Tfirst,1)
-
-
-%%
-figure;
-step(G_UA_Tfirst_PID_manual); hold on;
-step(G_UA_Tfirst_PID_ZN); hold on;
-step(G_UA_Tfirst_PI_ZN); hold on;
-step(G_UA_Tfirst_P_ZN); hold on;
-step(G_UA_Tfirst);
-ylabel("T_1 (K)")
-xlabel("Tempo (s)")
-legend("Manual PID","ZN PID", "ZN PI", "ZN P", "Malha aberta")
-saveas(gcf,'PID_step_response.eps','epsc')
-
-%%
-
-figure;
-subplot(1,2,1)
-rlocus(G_UA_Tend);
-title("Lugar $G:\Delta U_A \longrightarrow \Delta T_6$",'interpreter','latex')
-ylabel("Eixo imaginaria")
-xlabel("Eixo real")
-subplot(1,2,2)
-step(G_UA_Tend);
-title("Degrau $G:\Delta U_A \longrightarrow \Delta T_6$",'interpreter','latex')
-ylabel("ΔT_6 (K)")
-xlabel("Tempo")
-stepinfo(G_UA_Tend)
-saveas(gcf,'G_UA_Tend.eps','epsc')
-
-
-% TODO: implement H
-
-%% Code de Arthur %%%
-
-
-% Função de transferência G_UA
-% G_UA_original = G(1, 1); % Função de transferência entre T1 e U_A 
-
-% Coeficientes do numerador e do denominador da função de transferência original
-% [numerator, denominator] = tfdata(G_UA_original, 'v');
-
-% Multiplicar a função de transferência por -1 para ajuste correto
-G_UA = G_UA_Tfirst
-
-% Mostrar a função de transferência ajustada
-disp('Função de Transferência G_{T1, U_A} * -1:');
-disp(G_UA);
-
-
-% Encontre os polos e zeros
-poles = pole(G_UA);
-zeros = zero(G_UA);
-
-% Exiba os valores dos polos e zeros
-disp('Polos:');
-disp(poles);
-disp('Zeros:');
-disp(zeros);
-
-% Plotar o Root Locus
-figure;
-rlocus(G_UA);
-title('Root Locus de G_{T1, U_A}');
-grid on;
-
-% Definição da faixa de frequência desejada
 fmin = 10^-2;  % Frequência mínima
 fmax = 10^1;   % Frequência máxima
 w = logspace(log10(fmin), log10(fmax), 500);  % Vetor de frequência
 
-% Plotar o diagrama de Bode na faixa de frequência especificada
 figure;
-bode(G_UA, w);
-grid on;
-title('Diagrama de Bode de G_UA com faixa de frequência ajustada');
+margin(PI_manual_sys,w); hold on
+margin(feedback(lead_comp_sys,1),w)
+margin(G_UA_Tfirst,w)
+title("")
+legend("Ajustado manualmente", "Avanco compensador c/ fechada", "Malha aberta")
+saveas(gcf,'G_various_allocation_bode.eps','epsc')
 
-% Analisar a resposta ao degrau
+
 figure;
-step(G_UA);
-title('Resposta ao Degrau de G_{T1, U_A}');
+margin(PID_sys,w); hold on
+margin(PD_sys,w)
+margin(P_sys,w)
+margin(G_compensated,w)
+xlabel("Frequência")
+title("")
+legend("PID, ZN", "PD, ZN", "P, ZN","So compensador")
+saveas(gcf,'G_comp_PID_ZN_bode.eps','epsc')
 
 
-%%% CONTROLADOR P, PI, PD e PID %%%
+%%
 
-% Parâmetros iniciais do controlador
-Ti = 999; % Definir o tempo integral para um valor muito alto
-Td = 0; % Definir o tempo derivativo para zero
-
-% Ajustar ganho proporcional Kc
-Ku = 0; % Inicialização do ganho final
-Pu = 0; % Inicialização do período de oscilação
-Kc_values = 0:0.1:30; % Valores de Kc a serem testados
-
-% Loop para encontrar Ku e Pu
-found = false;
-for Kc = Kc_values
-    PID_Controller = pid(Kc, Kc/Ti, Kc*Td);
-    sys_cl = feedback(PID_Controller * G_UA, 1);
-    t = 0:0.01:100;
-    y = step(sys_cl, t);
-    
-    % Verificar oscilações
-    [pks, locs] = findpeaks(y); % Encontrar picos na resposta
-    
-    if length(pks) > 2
-        % Calcular o período de oscilação
-        Pu = mean(diff(t(locs)));
-        Ku = Kc;
-        found = true;
-        break;
-    end
+fprintf('Valor do ITAE de PID: %.4f\n', itae(PID_sys));
+function J = itae(sys_cl)
+    t = 0:0.01:10; % Tempo de simulação
+    [y, t] = step(sys_cl, t);
+    e = 1 - y; % Erro
+    ITAE = trapz(t, t .* abs(e)); % Cálculo do ITAE
+    J = ITAE; % Retornar o valor do ITAE
 end
 
-% Verificar se Ku e Pu foram encontrados
-if ~found
-    error('Não foi possível encontrar Ku e Pu. Ajuste o intervalo de Kc e tente novamente.');
-else
-    disp(['Ku encontrado: ', num2str(Ku)]);
-    disp(['Pu encontrado: ', num2str(Pu)]);
-end
+%%
 
-% Parâmetros PID usando Ziegler-Nichols
-Kc = Ku / 1.7;
-Ti = Pu / 2;
-Td = Pu / 8;
-
-% Exibir os valores calculados
-disp('Parâmetros PID calculados:')
-disp(['Kc: ', num2str(Kc)])
-disp(['Ti: ', num2str(Ti)])
-disp(['Td: ', num2str(Td)])
-
-% Criar controladores P, PI, PD e PID
-P_Controller = pid(Kc, 0, 0);
-PI_Controller = pid(Kc, Kc/Ti, 0);
-PD_Controller = pid(Kc, 0, Kc*Td);
-PID_Controller = pid(Kc, Kc/Ti, Kc*Td);
-
-% Definir os sistemas em malha fechada para cada controlador
-sys_cl_P = feedback(P_Controller * G_UA, 1);
-sys_cl_PI = feedback(PI_Controller * G_UA, 1);
-sys_cl_PD = feedback(PD_Controller * G_UA, 1);
-sys_cl_PID = feedback(PID_Controller * G_UA, 1);
-
-% Simulação de resposta ao degrau
-t = 0:0.01:60;
-[y_P, t] = step(sys_cl_P, t);
-[y_PI, t] = step(sys_cl_PI, t);
-[y_PD, t] = step(sys_cl_PD, t);
-[y_PID, t] = step(sys_cl_PID, t);
-
-% Plotar a resposta ao degrau para cada controlador
-figure;
-plot(t, y_P, 'r', 'DisplayName', 'Controlador P');
-hold on;
-plot(t, y_PI, 'g', 'DisplayName', 'Controlador PI');
-plot(t, y_PD, 'b', 'DisplayName', 'Controlador PD');
-plot(t, y_PID, 'k', 'DisplayName', 'Controlador PID');
-hold off;
-title('Resposta ao Degrau com Diferentes Tipos de Controladores')
-xlabel('Tempo (s)');
-ylabel('Amplitude');
-legend('show');
-grid on;
-
-% Avaliar o overshoot e o tempo de estabilização para cada controlador
-info_P = stepinfo(y_P, t);
-overshoot_P = info_P.Overshoot;
-settling_time_P = info_P.SettlingTime;
-disp(['Overshoot Controlador P: ', num2str(overshoot_P), ' %']);
-disp(['Tempo de Estabilização Controlador P: ', num2str(settling_time_P), ' s']);
-
-info_PI = stepinfo(y_PI, t);
-overshoot_PI = info_PI.Overshoot;
-settling_time_PI = info_PI.SettlingTime;
-disp(['Overshoot Controlador PI: ', num2str(overshoot_PI), ' %']);
-disp(['Tempo de Estabilização Controlador PI: ', num2str(settling_time_PI), ' s']);
-
-info_PD = stepinfo(y_PD, t);
-overshoot_PD = info_PD.Overshoot;
-settling_time_PD = info_PD.SettlingTime;
-disp(['Overshoot Controlador PD: ', num2str(overshoot_PD), ' %']);
-disp(['Tempo de Estabilização Controlador PD: ', num2str(settling_time_PD), ' s']);
-
-info_PID = stepinfo(y_PID, t);
-overshoot_PID = info_PID.Overshoot;
-settling_time_PID = info_PID.SettlingTime;
-disp(['Overshoot Controlador PID: ', num2str(overshoot_PID), ' %']);
-disp(['Tempo de Estabilização Controlador PID: ', num2str(settling_time_PID), ' s']);
-
-% Plotar o Root Locus
-figure;
-rlocus(sys_cl_P);
-title('Root Locus de G_{T1, U_A} com P');
-grid on;
-
-figure;
-rlocus(sys_cl_PI);
-title('Root Locus de G_{T1, U_A} com PI');
-grid on;
-
-figure;
-rlocus(sys_cl_PD);
-title('Root Locus de G_{T1, U_A} com PD');
-grid on;
-
-figure;
-rlocus(sys_cl_PID);
-title('Root Locus de G_{T1, U_A} com PID');
-grid on;
-
-% Encontre os polos e zeros para análise apenas do PID
-poles1 = pole(sys_cl_PID);
-zeros1 = zero(sys_cl_PID);
-
-% Exiba os valores dos polos e zeros
-disp('Polos PID:');
-disp(poles1);
-disp('Zeros PID:');
-disp(zeros1);
-
-% Plotar diagramas de Bode
-figure;
-bode(G_UA, w);
-hold on;
-bode(sys_cl_P, w);
-title('Diagrama de Bode: Controlador P vs Malha Aberta');
-legend('Malha Aberta', 'Controlador P');
-grid on;
-
-figure;
-bode(G_UA, w);
-hold on;
-bode(sys_cl_PI, w);
-title('Diagrama de Bode: Controlador PI vs Malha Aberta');
-legend('Malha Aberta', 'Controlador PI');
-grid on;
-
-figure;
-bode(G_UA, w);
-hold on;
-bode(sys_cl_PD, w);
-title('Diagrama de Bode: Controlador PD vs Malha Aberta');
-legend('Malha Aberta', 'Controlador PD');
-grid on;
-
-figure;
-bode(G_UA, w);
-hold on;
-bode(sys_cl_PID, w);
-title('Diagrama de Bode: Controlador PID vs Malha Aberta');
-legend('Malha Aberta', 'Controlador PID');
-grid on;
-
-%%% MARGEM DE GANHO E MARGEM DE FASE %%%
-
-figure;
-margin(G_UA, w);
-title('Margem de Ganho e Margem de Fase em malha aberta');
-grid on;
-
-[GM, PM, Wcg, Wcp] = margin(G_UA);
-disp(['Margem de Ganho: ', num2str(GM), ' dB']);  % Margem infinita
-disp(['Margem de Fase: ', num2str(PM), ' graus']);  % Nunca chega aos 180 graus
-disp(['Frequência de Cruzamento de Ganho: ', num2str(Wcg), ' rad/s']);
-disp(['Frequência de Cruzamento de Fase: ', num2str(Wcp), ' rad/s']);
-
-
-%%% COMPENSADOR DE AVANCO ATRAVES DO DIAGRAMA DE BODE %%%
-
-% Determinar a Margem de Fase Desejada
-desired_phase_margin = 45; % Margem de fase desejada em graus, NAO SEI QUAL O VALOR CERTO
-additional_phase_margin = desired_phase_margin - PM;
-
-% Projetar o Compensador de Avanço
-% Determinar a frequência onde o ganho cruzado acontece
-freq = Wcp; % Utilizando a frequência de cruzamento de fase, TALVEZ O PROBLEMA SEJA AQUI, FREQUENCIA BAIXA
-
-% Calcular o ângulo necessário de avanço (em radianos)
-phi = (additional_phase_margin) * (pi/180);
-
-% Determinar alpha e T
-alpha = (1 - sin(phi)) / (1 + sin(phi));
-T = 1 / (freq * sqrt(alpha));  % Usando Wcp para determinar T
-
-% Criação do compensador de avanço
-C = tf([T 1], [alpha*T 1]);
-
-% Implementar o Compensador
-sys_comp = series(C, G_UA);
-
-% Nova Resposta em Frequência
-figure;
-bode(G_UA, sys_comp, w);
-legend('Malha aberta', 'Sistema com Compensador de Avanço', 'Location', 'southeast');
-grid on;
-title('Diagrama de Bode com e sem Compensador de Avanço');
-
-% Análise de Margem de Fase
-figure;
-margin(sys_comp, w);
-title('Margem de Fase do Sistema com Compensador de Avanço');
-
-% Resposta ao degrau
-figure;
-step(sys_comp, 0:0.01:1200);
-legend('Sistema com Compensador de Avanço', 'Location', 'southeast');
-title('Resposta ao Degrau com Compensador de Avanço');
-grid on;
-
-% Avaliar a Resposta ao Degrau
-info = stepinfo(sys_comp);
-disp(['Overshoot com controlador de avanco: ', num2str(info.Overshoot), ' %']);
-disp(['Settling Time com controlador de avanco: ', num2str(info.SettlingTime), ' seconds']);
