@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="115.91296mm"
-   height="46.278618mm"
-   viewBox="0 0 115.91296 46.278618"
+   width="117.26723mm"
+   height="47.894024mm"
+   viewBox="0 0 117.26723 47.894024"
    version="1.1"
    id="svg1"
    sodipodi:docname="controlador_classico.svg"
@@ -24,8 +24,8 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      inkscape:zoom="1.6650972"
-     inkscape:cx="217.10444"
-     inkscape:cy="26.725166"
+     inkscape:cx="219.5067"
+     inkscape:cy="29.727994"
      inkscape:window-width="1920"
      inkscape:window-height="1011"
      inkscape:window-x="0"
@@ -35,7 +35,7 @@
   <defs
      id="defs1">
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter449"
        x="0"
@@ -48,7 +48,7 @@
          id="feColorMatrix449" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter450"
        x="0"
@@ -61,7 +61,7 @@
          id="feColorMatrix450" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter451"
        x="0"
@@ -74,7 +74,7 @@
          id="feColorMatrix451" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter452"
        x="0"
@@ -87,7 +87,7 @@
          id="feColorMatrix452" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter453"
        x="-0.007795646"
@@ -100,7 +100,7 @@
          id="feColorMatrix453" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter454"
        x="0"
@@ -113,7 +113,7 @@
          id="feColorMatrix454" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter455"
        x="0"
@@ -126,7 +126,7 @@
          id="feColorMatrix455" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter456"
        x="0"
@@ -139,7 +139,7 @@
          id="feColorMatrix456" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter457"
        x="0"
@@ -152,7 +152,7 @@
          id="feColorMatrix457" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter458"
        x="-0.051938663"
@@ -165,7 +165,7 @@
          id="feColorMatrix458" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter459"
        x="-0.051938663"
@@ -178,7 +178,7 @@
          id="feColorMatrix459" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter460"
        x="0"
@@ -191,7 +191,7 @@
          id="feColorMatrix460" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter461"
        x="0"
@@ -204,7 +204,7 @@
          id="feColorMatrix461" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter462"
        x="-0.035679185"
@@ -217,7 +217,7 @@
          id="feColorMatrix462" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter463"
        x="-0.010327326"
@@ -230,7 +230,7 @@
          id="feColorMatrix463" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter464"
        x="-0.010327326"
@@ -243,7 +243,7 @@
          id="feColorMatrix464" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter465"
        x="-0.0032989016"
@@ -256,7 +256,7 @@
          id="feColorMatrix465" />
     </filter>
     <filter
-       style="color-interpolation-filters:sRGB;"
+       style="color-interpolation-filters:sRGB"
        inkscape:label="Invert"
        id="filter466"
        x="-0.026363216"
@@ -270,27 +270,27 @@
     </filter>
   </defs>
   <rect
-     style="opacity:0.7;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.499999;stroke-linecap:round;stroke-opacity:1;paint-order:fill markers stroke"
+     style="opacity:0.5;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.499999;stroke-linecap:round;stroke-opacity:1;paint-order:fill markers stroke"
      id="rect305"
      width="117.26723"
      height="47.894024"
-     x="-0.56818962"
-     y="-0.72778076" />
+     x="0"
+     y="0" />
   <path
      style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke;filter:url(#filter466)"
-     d="M 113.81405,5.9328795 V 40.646133 h -9.48291"
+     d="M 114.38224,6.6606603 V 41.373914 h -9.48291"
      id="path1-0" />
   <path
      style="fill:none;stroke:#000000;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke;filter:url(#filter465)"
-     d="M 3.7543291,19.476258 V 40.898063 H 79.536976"
+     d="M 4.3225187,20.204039 V 41.625844 H 80.105166"
      id="path1-7-3" />
   <rect
      style="fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke;filter:url(#filter464)"
      id="rect1-5-6-2"
      width="24.207621"
      height="10.624571"
-     x="86.599892"
-     y="10.344076"
+     x="87.168083"
+     y="11.071856"
      rx="0.45233658"
      ry="0.2733655" />
   <rect
@@ -298,33 +298,33 @@
      id="rect1-5-6-2-6"
      width="24.207621"
      height="10.624571"
-     x="79.903458"
-     y="35.404053"
+     x="80.471649"
+     y="36.131832"
      rx="0.45233658"
      ry="0.2733655" />
   <path
      style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:0.499998;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke"
-     d="m 113.60172,15.685274 h -2.75499"
+     d="m 114.16991,16.413055 h -2.75499"
      id="path146-8-6" />
   <path
      style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:0.500001;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke"
-     d="M 13.483246,15.861586 H 7.5119491"
+     d="M 14.051436,16.589367 H 8.0801387"
      id="path146-8-0-09" />
   <path
      style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke"
-     d="M 48.535622,15.671758 H 45.892357"
+     d="M 49.103812,16.399539 H 46.460547"
      id="path146-8-0-09-9" />
   <path
      style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:0.499999;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke"
-     d="M 3.6522631,12.232758 V 8.0074645"
+     d="M 4.2204527,12.960539 V 8.7352453"
      id="path146-8-0-0-4" />
   <path
      style="fill:none;fill-opacity:1;stroke:#ffffff;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke"
-     d="M 86.354431,15.66267 H 76.958363"
+     d="M 86.922621,16.390451 H 77.526553"
      id="path146-8-3-5" />
   <g
      id="g82-0-2"
-     transform="translate(-35.088491,-27.576099)"
+     transform="translate(-34.520301,-26.848318)"
      style="filter:url(#filter462)">
     <circle
        style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke"
@@ -334,7 +334,7 @@
        r="3.5034432" />
   </g>
   <g
-     transform="matrix(0.47271859,0,0,0.47271859,0.83581714,15.386651)"
+     transform="matrix(0.47271859,0,0,0.47271859,1.4040068,16.114432)"
      id="g81-4-1"
      style="stroke-width:2.11542;filter:url(#filter461)">
     <g
@@ -356,7 +356,7 @@
   </g>
   <g
      id="g113-52-8-8"
-     transform="matrix(0.24929609,0,0,0.24929609,2.7028771,18.430266)"
+     transform="matrix(0.24929609,0,0,0.24929609,3.2710667,19.158047)"
      style="fill:#000000;fill-opacity:1;stroke-width:1.69811;filter:url(#filter460)">
     <path
        d="m 6.5625,-2.296875 c 0.171875,0 0.359375,0 0.359375,-0.203125 0,-0.1875 -0.1875,-0.1875 -0.359375,-0.1875 H 1.171875 c -0.171875,0 -0.34375,0 -0.34375,0.1875 0,0.203125 0.171875,0.203125 0.34375,0.203125 z m 0,0"
@@ -365,14 +365,14 @@
   </g>
   <path
      style="fill:#865e3c;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke;filter:url(#filter459)"
-     d="m 1.3654501,13.233188 4.81337,4.813377"
+     d="m 1.9336397,13.960969 4.81337,4.813377"
      id="path169-3-3" />
   <path
      style="fill:#865e3c;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-dasharray:none;paint-order:fill markers stroke;filter:url(#filter458)"
-     d="m 6.0390801,13.267555 -4.81337,4.813377"
+     d="m 6.6072697,13.995336 -4.81337,4.813377"
      id="path169-8-1-7" />
   <g
-     transform="translate(15.954182,13.6535)"
+     transform="translate(16.522372,14.381281)"
      id="g238"
      style="filter:url(#filter457)">
     <g
@@ -518,7 +518,7 @@
     </g>
   </g>
   <g
-     transform="translate(50.162939,13.728298)"
+     transform="translate(50.731129,14.456079)"
      id="g260"
      style="filter:url(#filter456)">
     <g
@@ -664,7 +664,7 @@
     </g>
   </g>
   <g
-     transform="translate(88.288891,13.728298)"
+     transform="translate(88.857081,14.456079)"
      id="g279"
      style="filter:url(#filter455)">
     <g
@@ -786,7 +786,7 @@
     </g>
   </g>
   <g
-     transform="translate(82.903999,38.372513)"
+     transform="translate(83.472189,39.100294)"
      id="g311"
      style="filter:url(#filter454)">
     <g
@@ -895,8 +895,8 @@
      id="rect1-5-6-2-2"
      width="27.736156"
      height="10.624571"
-     x="48.782467"
-     y="10.344076"
+     x="49.350655"
+     y="11.071856"
      rx="0.51826978"
      ry="0.2733655" />
   <rect
@@ -904,12 +904,12 @@
      id="rect1-5-6-2-2-7"
      width="32.069183"
      height="10.624571"
-     x="13.631028"
-     y="10.344076"
+     x="14.199218"
+     y="11.071856"
      rx="0.59923548"
      ry="0.2733655" />
   <g
-     transform="translate(95.050571,4.3465341e-5)"
+     transform="translate(95.618761,0.72782422)"
      id="g329"
      style="filter:url(#filter452)">
     <g
@@ -1035,7 +1035,7 @@
     </g>
   </g>
   <g
-     transform="translate(55.847272,35.453063)"
+     transform="translate(56.415462,36.180844)"
      id="g345"
      style="filter:url(#filter451)">
     <g
@@ -1140,7 +1140,7 @@
     </g>
   </g>
   <g
-     transform="translate(77.615882,10.479347)"
+     transform="translate(78.184072,11.207128)"
      id="g353"
      style="filter:url(#filter450)">
     <g
@@ -1197,7 +1197,7 @@
     </g>
   </g>
   <g
-     transform="translate(0.03009714,2.6422045)"
+     transform="translate(0.59828676,3.3699853)"
      id="g362"
      style="filter:url(#filter449)">
     <g
