@@ -31,10 +31,6 @@ A = jacobian(dTi, Tarr);
 B = jacobian(dTi, u_params);
 E = jacobian(dTi, fluctating_params);
 
-latexify("\frac{d}{dt}\vec T =",dTi)
-latexify("A=",A)
-latexify("B=",B)
-
 LiterToM3 = 1000;
 F = 0.9;
 cH2O = 4186; % J/kgK
@@ -214,7 +210,6 @@ figure(T_pole_history);
 ylabel('$T_1$ (K)');
 xlabel('Tempo (s)');
 legend('LQR', 'Real LQR', '0.9 LQR dominante', '1.1 LQR dominante', '1.3 LQR dominante')
-%legend('0.7', '0.9', 'LQR', '1.1', '1.3')
 saveas(gcf,'poles_T.eps','epsc')
 
 
@@ -222,14 +217,13 @@ figure(u_pole_history);
 ylabel('$U_A$ (W/K)');
 xlabel('Tempo (s)');
 legend('LQR', 'Real LQR', '0.9 LQR dominante', '1.1 LQR dominante', '1.3 LQR dominante')
-%legend('0.7', '0.9', 'LQR', '1.1', '1.3')
 saveas(gcf,'poles_U.eps','epsc')
 
 
 %%%% Observador %%%%
 %%
 
-% @M, here we need realistic values, we can discuss
+% Valores de ruído e perturbação, assumidos como gaussianos
 Vd = 0.1*eye([6,6]);
 Vn = 0.7*eye([nMeasuresC,nMeasuresC]);
 
@@ -314,10 +308,8 @@ G_formula = C*inv((s*eye(size(A)) - A))*B+D
 % Função de transferência G_UA_Tx
 G_UA_Tfirst = -G % Função de transferência entre T1 e U_A (Assumindo U_A é a segunda entrada)
 
-% please note, G_UA is multiplied by -1 such that a step response of +1 means
-% that we cool down the system by 1C, thus the absolute |T| is plotted
-
-
+% observe que G_UA é multiplicado por -1 de modo que uma resposta ao degrau de +1 significa
+% que resfriamos o sistema em 1C, portanto, o absoluto |T| está traçado
 disp('Função de Transferência G_{T1, U_A}:');
 disp(G_UA_Tfirst);
 
@@ -340,11 +332,10 @@ stepinfo(G_UA_Tfirst)
 saveas(gcf,'G_UA_Tfirst.eps','epsc')
 
 
-%%%% Stability with Routh array %%%%
+%%%% Estabilidade com array Routh %%%%
 %%
 
-% compensador de atraso
-% Compensator made with arthur
+% Compensador de atraso
 G_comp = 0.14286 *(s+0.1842)/(s+0.02632)
 G_compensated = G_comp*G_UA_Tfirst
 
@@ -371,7 +362,7 @@ stepinfo(G_compensated)
 saveas(gcf,'G_UA_Tfirst_Compensated.eps','epsc')
 
 %%
-% search for maximal gain
+% busca pelo ganho máximo
 syms Kmax;
 combinedTFpoly = Kmax*numerator + denominator;
 
@@ -396,16 +387,14 @@ for i = 3:n
     end
 end
 
-% Solve for ultimate gain by increasing the value of K
+% Resolva o ganho final aumentando o valor de K
 
 for i = 3:n
-    % Use a large initial value to get positive solutions. Requieres manual
-    % tweaking
+    % Use um valor inicial grande para obter soluções positivas. Requer ajustes manuais
     fzero(matlabFunction(Routh(i,1)),1000)
 end
-% Manual inspection of intersections about to find ultimate gain that was
-% printed above. Se on Routh array if values actually is ultimate
-Kmax = 929.9327
+% Inspeção manual dos valores para ganho final do sistema que foram impressos acima. 
+% Veja se os valores da matriz Routh são realmente definitivosKmax = 929.9327
 disp("Com Kultimate")
 disp(double(subs(Routh)));
 Kmax = Kmax * 1.01
@@ -422,7 +411,7 @@ Kultimate = Kmax;
 Kmax = 0
 RouthAberta = subs(Routh)
 
-disp("Stability binary, 1) According to Routh calculation 2) Matlab $ stable")
+disp("Estabilidade binária, 1) De acordo com o cálculo de Routh 2) Função -stable- do Matlab")
 stability = all(RouthAberta(:, 1) > 0)
 disp(isstable(G_compensated))
 
@@ -442,16 +431,16 @@ cl_poles_u = pole(TF_first_ultimate)
 osc_arr = imag(sort(cl_poles_u,'ComparisonMethod','real'))
 P_u = 2*pi / abs(osc_arr(end))
 
-% Calculate PID parameters
+% Calcular parâmetros PID
 Kp_PID = 0.6 * Kultimate;
 Ti_PID = 0.5 * P_u;
 Td_PID = 0.125 * P_u;
 
-% PI controller (proportional and integral action)
+% Controlador PI (ação proporcional e integral)
 Kp_PD = 0.8 * Kultimate;
 Ti_PD = 0.125 * P_u;
 
-% P controller (no integral or derivative action)
+% Controlador P (sem ação integral ou derivada)
 Kp_P = 0.5 * Kultimate;
 
 PID_controller = pid(Kp_PID,Kp_PID/Ti_PID,Kp_PID*Td_PID)
@@ -462,7 +451,7 @@ PID_sys = feedback(PID_controller* G_compensated,1)
 PD_sys = feedback(PD_controller* G_compensated,1)
 P_sys = feedback(P_controller* G_compensated,1)
 
-% PI-controller manually tuned
+% Controlador PI ajustado manualmente
 G_PI_manual = 21.008 *(s+0.2485)/s %5.2208 * (1+4*s)/s 
 
 PI_manual_sys = feedback(G_PI_manual* G_UA_Tfirst,1)
@@ -597,7 +586,6 @@ title("")
 legend("PID, ZN", "PD, ZN", "P, ZN","So compensador")
 saveas(gcf,'G_comp_PID_ZN_bode.eps','epsc')
 
-
 %%
 
 fprintf('Valor do ITAE de PID: %.4f\n', itae(PID_sys));
@@ -608,6 +596,4 @@ function J = itae(sys_cl)
     ITAE = trapz(t, t .* abs(e)); % Cálculo do ITAE
     J = ITAE; % Retornar o valor do ITAE
 end
-
-%%
 
